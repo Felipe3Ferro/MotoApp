@@ -6,84 +6,41 @@ import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.View;
 import android.widget.Toast;
 
-
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.ArrayList;
+import java.io.File;
 import java.util.Timer;
 import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
-
-    ArrayList<String> book_id, book_title, book_author, book_pages;
-
-    MyDatabaseHelper myDB;
     Timer timer;
     TimerTask timerTask;
     Double time = 0.0;
-
+    FileUtil fileUtil;
+    File file;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
-        myDB = new MyDatabaseHelper(MainActivity.this);
         super.onCreate(savedInstanceState);
+        file = new File(getFilesDir()+ "/data.csv");
         timer = new Timer();
+
+        if(!file.exists()) {
+            fileUtil.writeStringAsFile("latitude;longitude;timestamp;x,y,z", file);
+        }
         startTimer();
-
     }
 
-    public void buscarInformacoesGPS() {
-
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)   != PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-
-            ActivityCompat.requestPermissions(MainActivity.this, new String[] {Manifest.permission.ACCESS_FINE_LOCATION}, 1);
-            ActivityCompat.requestPermissions(MainActivity.this, new String[] {Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
-            ActivityCompat.requestPermissions(MainActivity.this, new String[] {Manifest.permission.ACCESS_NETWORK_STATE}, 1);
-            return;
-        }
-
-        LocationManager  mLocManager  = (LocationManager) getSystemService(MainActivity.this.LOCATION_SERVICE);
-        LocationListener mLocListener = new MinhaLocalizacaoListener();
-
-        mLocManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mLocListener);
-
-        if (mLocManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            String lat = "" + MinhaLocalizacaoListener.latitude;
-            String longi = "" + MinhaLocalizacaoListener.longitude;
-
-            AddData(lat,longi,"0");
-
-//            save(texto);
-
-        } else {
-            toastMessage("GPS DESABILITADO.");
-        }
-    }
-
-    public void startTimer()
-    {
-        timerTask = new TimerTask()
-        {
+    public void startTimer() {
+        timerTask = new TimerTask() {
             @Override
-            public void run()
-            {
-                runOnUiThread(new Runnable()
-                {
+            public void run() {
+                runOnUiThread(new Runnable() {
                     @Override
-                    public void run()
-                    {
+                    public void run() {
                         time++;
                         buscarInformacoesGPS();
                     }
@@ -91,54 +48,86 @@ public class MainActivity extends AppCompatActivity {
             }
 
         };
-        timer.scheduleAtFixedRate(timerTask, 0 ,1000);
+        timer.scheduleAtFixedRate(timerTask, 0, 1000);
     }
 
-//    public void save(String text){
-//        FileOutputStream fos =null;
-//
+    public void buscarInformacoesGPS() {
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
+            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_NETWORK_STATE}, 1);
+            return;
+        }
+
+        LocationManager mLocManager = (LocationManager) getSystemService(MainActivity.this.LOCATION_SERVICE);
+        LocationListener mLocListener = new MinhaLocalizacaoListener();
+
+        mLocManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mLocListener);
+
+        if (mLocManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            String texto = MinhaLocalizacaoListener.latitude + ";" + MinhaLocalizacaoListener.longitude + ";" + System.currentTimeMillis()/1000 + "\n";
+
+            fileUtil.appendStringToFile(texto,file);
+
+        } else {
+            Toast.makeText(MainActivity.this, "GPS DESABILITADO.", Toast.LENGTH_SHORT).show();
+        }
+
+    }
+
+
+}
+
+//    public void save(String text) {
+//        FileOutputStream fos = null;
 //        try {
 //            fos = openFileOutput(FILE_NAME, MODE_PRIVATE);
 //            fos.write(text.getBytes());
-//
-//            Toast.makeText(this, "Saved to "+ getFilesDir() + "/" + FILE_NAME, Toast.LENGTH_LONG).show();
 //        } catch (FileNotFoundException e) {
-//            System.out.println("------------------->Erro1");
 //            e.printStackTrace();
 //        } catch (IOException e) {
-//            System.out.println("------------------->Erro2");
 //            e.printStackTrace();
 //        } finally {
-//            if(fos != null){
+//            if (fos != null) {
 //                try {
 //                    fos.close();
-//                }catch (IOException e){
+//                } catch (IOException e) {
 //                    e.printStackTrace();
 //                }
 //            }
 //        }
 //    }
 
-    public void AddData(String lat, String longi, String g) {
-        myDB.addData(lat,longi,g);
-    }
-
-    private void toastMessage(String message){
-        Toast.makeText(this,message, Toast.LENGTH_SHORT).show();
-    }
-
-    void storeDataInArrays(){
-        Cursor cursor = myDB.readAllData();
-        if(cursor.getCount() == 0){
-        }else{
-            while (cursor.moveToNext()){
-                book_id.add(cursor.getString(0));
-                book_title.add(cursor.getString(1));
-                book_author.add(cursor.getString(2));
-                book_pages.add(cursor.getString(3));
-            }
-        }
-    }
-
-
-}
+//    public void load(View v) {
+//        FileInputStream fis = null;
+//
+//        try {
+//            fis = openFileInput(FILE_NAME);
+//            InputStreamReader isr = new InputStreamReader(fis);
+//            BufferedReader br = new BufferedReader(isr);
+//            StringBuilder sb = new StringBuilder();
+//            String text;
+//
+//            while ((text = br.readLine()) != null) {
+//                sb.append(text).append("\n");
+//            }
+//
+//            mEditText.setText(sb.toString());
+//
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        } finally {
+//            if (fis != null) {
+//                try {
+//                    fis.close();
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        }
+//    }
