@@ -18,9 +18,9 @@ import java.util.TimerTask;
 public class MainActivity extends AppCompatActivity {
     Timer timer;
     TimerTask timerTask;
-    Double time = 0.0;
     FileUtil fileUtil;
     File file;
+    int Delay = 1000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
         timer = new Timer();
 
         if(!file.exists()) {
-            fileUtil.writeStringAsFile("latitude;longitude;timestamp;x,y,z", file);
+            fileUtil.writeStringAsFile("latitude;longitude;timestamp;x;y;z\n", file);
         }
         startTimer();
     }
@@ -41,14 +41,13 @@ public class MainActivity extends AppCompatActivity {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        time++;
                         buscarInformacoesGPS();
                     }
                 });
             }
 
         };
-        timer.scheduleAtFixedRate(timerTask, 0, 1000);
+        timer.scheduleAtFixedRate(timerTask, 0, Delay);
     }
 
     public void buscarInformacoesGPS() {
@@ -68,10 +67,12 @@ public class MainActivity extends AppCompatActivity {
         mLocManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mLocListener);
 
         if (mLocManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            String texto = MinhaLocalizacaoListener.latitude + ";" + MinhaLocalizacaoListener.longitude + ";" + System.currentTimeMillis()/1000 + "\n";
-
-            fileUtil.appendStringToFile(texto,file);
-
+            if(MinhaLocalizacaoListener.longitude != 0 && MinhaLocalizacaoListener.latitude != 0){
+                String texto = MinhaLocalizacaoListener.latitude + ";" + MinhaLocalizacaoListener.longitude + ";" + System.currentTimeMillis()/1000 + "\n";
+                fileUtil.appendStringToFile(texto,file);
+            }else{
+                Toast.makeText(MainActivity.this, "CARREGANDO.", Toast.LENGTH_SHORT).show();
+            }
         } else {
             Toast.makeText(MainActivity.this, "GPS DESABILITADO.", Toast.LENGTH_SHORT).show();
         }
