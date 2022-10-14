@@ -5,7 +5,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.pm.PackageManager;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
@@ -15,7 +20,9 @@ import java.io.File;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements SensorEventListener {
+    SensorManager sensorManager;
+    Sensor accelerometer;
     Timer timer;
     TimerTask timerTask;
     FileUtil fileUtil;
@@ -27,10 +34,14 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         file = new File(getFilesDir()+ "/data.csv");
         timer = new Timer();
-
         if(!file.exists()) {
             fileUtil.writeStringAsFile("latitude;longitude;timestamp;x;y;z\n", file);
         }
+
+        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+//        sensorManager.registerListener(MainActivity.this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+
         startTimer();
     }
 
@@ -68,7 +79,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (mLocManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
             if(MinhaLocalizacaoListener.longitude != 0 && MinhaLocalizacaoListener.latitude != 0){
-                String texto = MinhaLocalizacaoListener.latitude + ";" + MinhaLocalizacaoListener.longitude + ";" + System.currentTimeMillis()/1000 + "\n";
+                String texto = MinhaLocalizacaoListener.latitude + ";" + MinhaLocalizacaoListener.longitude + ";" + System.currentTimeMillis()/1000;
                 fileUtil.appendStringToFile(texto,file);
             }else{
                 Toast.makeText(MainActivity.this, "CARREGANDO.", Toast.LENGTH_SHORT).show();
@@ -79,56 +90,15 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int i) {
+
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent sensorEvent) {
+        String texto = sensorEvent.values[0] +","+ sensorEvent.values[1] + ","+ sensorEvent.values[2]+ "\n";
+        fileUtil.appendStringToFile(texto,file);
+    }
 
 }
-
-//    public void save(String text) {
-//        FileOutputStream fos = null;
-//        try {
-//            fos = openFileOutput(FILE_NAME, MODE_PRIVATE);
-//            fos.write(text.getBytes());
-//        } catch (FileNotFoundException e) {
-//            e.printStackTrace();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        } finally {
-//            if (fos != null) {
-//                try {
-//                    fos.close();
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//        }
-//    }
-
-//    public void load(View v) {
-//        FileInputStream fis = null;
-//
-//        try {
-//            fis = openFileInput(FILE_NAME);
-//            InputStreamReader isr = new InputStreamReader(fis);
-//            BufferedReader br = new BufferedReader(isr);
-//            StringBuilder sb = new StringBuilder();
-//            String text;
-//
-//            while ((text = br.readLine()) != null) {
-//                sb.append(text).append("\n");
-//            }
-//
-//            mEditText.setText(sb.toString());
-//
-//        } catch (FileNotFoundException e) {
-//            e.printStackTrace();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        } finally {
-//            if (fis != null) {
-//                try {
-//                    fis.close();
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//        }
-//    }
